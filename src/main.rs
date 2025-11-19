@@ -1,9 +1,11 @@
 #![no_std]
 #![no_main]
 
+mod board;
 mod config;
 mod keycodes;
 mod matrix;
+mod usb;
 
 use panic_halt as _;
 
