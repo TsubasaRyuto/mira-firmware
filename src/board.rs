@@ -12,10 +12,9 @@ pub struct Board {
     pub rows: [Pin<DynPinId, FunctionSio<SioOutput>, PullDown>; MATRIX_ROWS],
     pub cols: [Pin<DynPinId, FunctionSio<SioInput>, PullUp>; MATRIX_COLS],
     pub timer: Timer,
-    pub usb_bus_allocator: UsbBusAllocator<UsbBus>,
 }
 
-pub fn init() -> Board {
+pub fn init() -> (Board, UsbBusAllocator<UsbBus>) {
     let mut pac = pac::Peripherals::take().unwrap();
     let mut watchdog = Watchdog::new(pac.WATCHDOG);
 
@@ -76,10 +75,12 @@ pub fn init() -> Board {
     );
     let usb_bus_allocator = UsbBusAllocator::new(usb_bus);
 
-    Board {
-        rows: [row0, row1],
-        cols: [col0, col1, col2, col3, col4, col5, col6, col7, col8, col9],
-        timer,
+    (
+        Board {
+            rows: [row0, row1],
+            cols: [col0, col1, col2, col3, col4, col5, col6, col7, col8, col9],
+            timer,
+        },
         usb_bus_allocator,
-    }
+    )
 }

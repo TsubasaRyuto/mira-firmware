@@ -3,3 +3,4 @@ target = "thumbv6m-none-eabi"
 
 [target.thumbv6m-none-eabi]
 rustflags = ["-C", "link-args=-Tlink.x"]
+runner = "picotool load --update --verify --execute -t elf"
