@@ -1,4 +1,8 @@
-use crate::matrix::DiodeDirection;
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum DiodeDirection {
+    Col2Row,
+    Row2Col,
+}
 
 pub const MATRIX_ROWS: usize = 2;
 pub const MATRIX_COLS: usize = 10;

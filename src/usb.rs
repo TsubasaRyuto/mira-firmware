@@ -19,13 +19,13 @@ pub struct KeyboardUsb<'a, B: usb_device::bus::UsbBus> {
 
 impl<'a> KeyboardUsb<'a, UsbBus> {
     pub fn init(bus_allocator: &'a UsbBusAllocator<UsbBus>) -> Self {
-        let mut hid = HIDClass::new(
+        let hid = HIDClass::new(
             &bus_allocator,
             usbd_hid::descriptor::KeyboardReport::desc(),
             USB_POLLING_INTERVAL_MS,
         );
     
-        let mut usb_dev =
+        let usb_dev =
             UsbDeviceBuilder::new(&bus_allocator, UsbVidPid(USB_VENDOR_ID, USB_PRODUCT_ID))
                 .strings(&[StringDescriptors::new(LangID::EN)
                     .manufacturer(USB_MANUFACTURER)
