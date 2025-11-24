@@ -12,6 +12,7 @@ mod keycodes;
 mod keymaps;
 mod matrix;
 mod usb;
+mod debounce;
 
 use cortex_m_rt::entry;
 use panic_halt as _;
