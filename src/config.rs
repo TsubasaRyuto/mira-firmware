@@ -9,7 +9,7 @@ pub const MATRIX_COLS: usize = 10;
 
 pub const DIODE_DIRECTION: DiodeDirection = DiodeDirection::Col2Row;
 
-pub const DEBOUNCE: usize = 10;
+pub const DEBOUNCE: u32 = 5;
 
 pub const USB_POLLING_INTERVAL_MS: u8 = 1;
 pub const USB_VENDOR_ID: u16 = 0xFEED;
