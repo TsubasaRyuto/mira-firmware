@@ -1,10 +1,40 @@
 #[derive(Copy, Clone)]
 pub enum Action {
+    /// Sends a standard key code.
+    /// Example: `Key(kc::A)`, `Key(kc::ENTER)`
     Key(KeyCode),
+
+    /// Modifier only. Active while held.
+    /// Example: `Modifier(modifiers::LCTRL)`
     Modifier(Modifier),
-    LayerTap(usize, KeyCode),
-    TapHoldLayer(usize),
+
+    /// Dual-role key (Mod-Tap).
+    /// Acts as a modifier when held, and sends a key code when tapped.
+    /// Example: `ModTap { modifier: modifiers::LCTRL, key_code: kc::A }`
+    ModTap {
+        modifier: Modifier,
+        key_code: KeyCode,
+    },
+
+    /// Dual-role key (Layer-Tap)
+    /// Activates the specified layer when held. and send a key code when tapped.
+    /// Example: `LayerTap { layer_ids: layers::LAYER1, key_code: kc::A }`
+    LayerTap { layer_idx: usize, key_code: KeyCode },
+
+    /// Activates the specified layer while held.
+    /// Example: `LayerMomentary(layers::LAYER1)`
+    LayerMomentary(usize),
+
+    /// Toggles the specified layer on/off with each press.
+    /// Example: `LayerMomentary(layers::LAYER1)`
+    LayerToggle(usize),
+
+    /// Transparent.
+    /// Passes the event down to the lower active layer.
     Trans,
+
+    /// No Operation.
+    /// Does nothing and blocks the event from passing down.
     NoOp,
 }
 

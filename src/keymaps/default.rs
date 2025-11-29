@@ -23,10 +23,10 @@ const LAYER0: [[Action; MATRIX_COLS]; MATRIX_ROWS] = [
         NoOp,
         NoOp,
         NoOp,
-        TapHoldLayer(layers::LAYER1),
-        TapHoldLayer(layers::LAYER2),
-        TapHoldLayer(layers::LAYER3),
-        NoOp, // Was TapHoldLayer(layers::LAYER4), which causes a panic.
+        LayerMomentary(layers::LAYER1),
+        LayerMomentary(layers::LAYER2),
+        LayerMomentary(layers::LAYER3),
+        NoOp, // Was LayerMomentary(layers::LAYER4), which causes a panic.
         NoOp,
         NoOp,
         NoOp,
