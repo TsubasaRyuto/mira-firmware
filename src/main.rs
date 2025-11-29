@@ -8,11 +8,12 @@ pub static BOOT2: [u8; 256] = rp2040_boot2::BOOT_LOADER_W25Q080;
 
 mod board;
 mod config;
+mod debounce;
 mod keycodes;
 mod keymaps;
+mod layers;
 mod matrix;
 mod usb;
-mod debounce;
 
 use cortex_m_rt::entry;
 use panic_halt as _;
