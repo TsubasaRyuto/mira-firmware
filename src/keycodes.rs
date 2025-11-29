@@ -1,10 +1,20 @@
+#[derive(Copy, Clone)]
+pub enum Action {
+    Key(KeyCode),
+    Modifier(Modifier),
+    LayerTap(usize, KeyCode),
+    TapHoldLayer(usize),
+    Trans,
+    NoOp,
+}
+
 /// USB HID Usage ID.
 pub type KeyCode = u8;
+pub type Modifier = u8;
 
 pub mod kc {
     use super::KeyCode;
 
-    pub const NO: KeyCode = 0x00;
     pub const ROLLOVER: KeyCode = 0x01;
 
     // 文字キー
@@ -90,12 +100,14 @@ pub mod kc {
 
 // 修飾キー
 pub mod modifiers {
-    pub const LCTRL: u8 = 0b0000_0001;
-    pub const LSHIFT: u8 = 0b0000_0010;
-    pub const LALT: u8 = 0b0000_0100;
-    pub const LGUI: u8 = 0b0000_1000;
-    pub const RCTRL: u8 = 0b0001_0000;
-    pub const RSHIFT: u8 = 0b0010_0000;
-    pub const RALT: u8 = 0b0100_0000;
-    pub const RGUI: u8 = 0b1000_0000;
+    use super::Modifier;
+
+    pub const LCTRL: Modifier = 0b0000_0001;
+    pub const LSHIFT: Modifier = 0b0000_0010;
+    pub const LALT: Modifier = 0b0000_0100;
+    pub const LGUI: Modifier = 0b0000_1000;
+    pub const RCTRL: Modifier = 0b0001_0000;
+    pub const RSHIFT: Modifier = 0b0010_0000;
+    pub const RALT: Modifier = 0b0100_0000;
+    pub const RGUI: Modifier = 0b1000_0000;
 }
