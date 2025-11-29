@@ -54,14 +54,24 @@ impl Matrix {
                 // --- イベント処理 (押した瞬間 / 離した瞬間) ---
                 #[allow(clippy::collapsible_if)]
                 if debouncer.just_pressed() {
-                    if let Action::LayerTap(layer, _) | Action::TapHoldLayer(layer) = action {
+                    if let Action::LayerTap {
+                        layer_idx: layer,
+                        key_code: _,
+                    }
+                    | Action::LayerMomentary(layer) = action
+                    {
                         self.layer.update(layer);
                     }
                 }
 
                 #[allow(clippy::collapsible_if)]
                 if debouncer.just_released() {
-                    if let Action::LayerTap(_, _) | Action::TapHoldLayer(_) = action {
+                    if let Action::LayerTap {
+                        layer_idx: _,
+                        key_code: _,
+                    }
+                    | Action::LayerMomentary(_) = action
+                    {
                         self.layer.update(LAYER0);
                     }
                 }
@@ -78,7 +88,7 @@ impl Matrix {
                         Action::Modifier(modifier_code) => {
                             modifier |= modifier_code;
                         }
-                        // LayerTap や TapHoldLayer はイベント処理で完結しているので、
+                        // LayerTap や LayerMomentary はイベント処理で完結しているので、
                         // ここでは何もしない。
                         _ => {}
                     }
