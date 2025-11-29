@@ -12,8 +12,6 @@ pub const DIODE_DIRECTION: DiodeDirection = DiodeDirection::Col2Row;
 
 pub const DEBOUNCE: u32 = 5;
 
-pub const TAPPING_TERM: u32 = 200;
-
 pub const USB_POLLING_INTERVAL_MS: u8 = 1;
 pub const USB_VENDOR_ID: u16 = 0xFEED;
 pub const USB_PRODUCT_ID: u16 = 0x0001;
