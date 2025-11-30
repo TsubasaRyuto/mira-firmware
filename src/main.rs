@@ -12,6 +12,7 @@ mod debounce;
 mod keycodes;
 mod keymaps;
 mod layers;
+mod macros;
 mod matrix;
 mod usb;
 

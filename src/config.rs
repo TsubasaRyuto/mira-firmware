@@ -18,3 +18,6 @@ pub const USB_PRODUCT_ID: u16 = 0x0001;
 pub const USB_DEVICE_VERSION: u16 = 0x0001; // 0x0001 = v0.0.1
 pub const USB_MANUFACTURER: &str = "DHW";
 pub const USB_PRODUCT: &str = "Mira Keyboard";
+
+pub const ROW_PINS: [usize; MATRIX_ROWS] = [10, 9];
+pub const COL_PINS: [usize; MATRIX_COLS] = [0, 1, 2, 3, 4, 15, 13, 27, 28, 29];
