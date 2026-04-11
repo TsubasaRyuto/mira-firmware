@@ -2,12 +2,6 @@
 #![no_main]
 
 use defmt_rtt as _;
-use panic_probe as _;
-
-#[unsafe(link_section = ".boot2")]
-#[unsafe(no_mangle)]
-#[used]
-pub static BOOT2: [u8; 256] = rp2040_boot2::BOOT_LOADER_W25Q080;
 
 mod board;
 mod config;
@@ -20,8 +14,18 @@ mod matrix;
 mod usb;
 
 use embassy_executor::Spawner;
-use matrix::Matrix;
+use matrix::{Matrix, matrix_task};
 use usb::{init_usb, usb_hid_task, usb_task};
+
+#[panic_handler]
+fn panic(_info: &core::panic::PanicInfo) -> ! {
+    loop {}
+}
+
+#[unsafe(export_name = "_defmt_panic")]
+fn defmt_panic() -> ! {
+    loop {}
+}
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
@@ -33,9 +37,9 @@ async fn main(spawner: Spawner) {
     let matrix = Matrix::new(board);
 
     // タスクの起動
-    defmt::unwrap!(spawner.spawn(usb_task(usb_dev)));
-    defmt::unwrap!(spawner.spawn(usb_hid_task(usb_hid)));
-    defmt::unwrap!(spawner.spawn(Matrix::run(matrix)));
+    spawner.spawn(usb_task(usb_dev).unwrap());
+    spawner.spawn(usb_hid_task(usb_hid).unwrap());
+    spawner.spawn(matrix_task(matrix).unwrap());
 
     defmt::info!("All tasks spawned.");
 }

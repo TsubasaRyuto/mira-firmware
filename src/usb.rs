@@ -3,8 +3,8 @@ use embassy_rp::peripherals::USB;
 use embassy_rp::usb::Driver;
 use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
 use embassy_sync::channel::Channel;
-use embassy_usb::class::hid::{HidReaderWriter, State};
-use embassy_usb::control::Config;
+use embassy_usb::class::hid::{HidReaderWriter, State, HidBootProtocol, HidSubclass};
+use embassy_usb::Config;
 use embassy_usb::{Builder, Handler};
 use usbd_hid::descriptor::{KeyboardReport, SerializedDescriptor};
 
@@ -97,6 +97,8 @@ pub fn init_usb(
         request_handler: None,
         poll_ms: 1,
         max_packet_size: 8,
+        hid_boot_protocol: HidBootProtocol::None, // ここは None で合っているか再確認が必要かもしれないが一旦保持
+        hid_subclass: HidSubclass::No,
     };
     let rw = HidReaderWriter::new(&mut builder, STATE.init(State::new()), config);
 
