@@ -1,10 +1,7 @@
 use crate::config::DEBOUNCE;
-use rp2040_hal::fugit::{Duration, ExtU32, Instant};
+use embassy_time::{Duration, Instant};
 
-const TIMER_HZ: u32 = 1_000_000;
-type TimerInstant = Instant<u64, 1, TIMER_HZ>;
-
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, defmt::Format)]
 pub enum KeyState {
     Released,
     JustPressed,
@@ -15,53 +12,51 @@ pub enum KeyState {
 #[derive(Clone, Copy)]
 pub struct Debouncer {
     state: KeyState,
-    cooldown_until: TimerInstant,
+    cooldown_until: Instant,
 }
 
 impl Debouncer {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             state: KeyState::Released,
-            cooldown_until: TimerInstant::from_ticks(0),
+            cooldown_until: Instant::from_ticks(0),
         }
     }
 
-    pub fn update(&mut self, raw_input: bool, current_time: TimerInstant) {
-        let stable_pressed = match self.state {
-            KeyState::Released | KeyState::JustReleased => false,
-            KeyState::Pressed | KeyState::JustPressed => true,
-        };
-
+    pub fn update(&mut self, raw_input: bool, current_time: Instant) {
         if self.cooldown_until > current_time {
-            return;
-        }
-
-        if raw_input == stable_pressed {
-            // State is stable, transition JustPressed/JustReleased to Pressed/Released
+            // During cooldown, JustPressed/JustReleased transition to Pressed/Released
             if self.state == KeyState::JustPressed {
                 self.state = KeyState::Pressed;
             } else if self.state == KeyState::JustReleased {
                 self.state = KeyState::Released;
             }
-        } else {
+            return;
+        }
+
+        let is_currently_pressed = matches!(self.state, KeyState::Pressed | KeyState::JustPressed);
+
+        if raw_input != is_currently_pressed {
             // State has changed, set cooldown and update state
-            let cooldown_duration: Duration<u64, 1, TIMER_HZ> = DEBOUNCE.millis().into();
-            self.cooldown_until = current_time + cooldown_duration;
+            self.cooldown_until = current_time + Duration::from_millis(DEBOUNCE as u64);
 
             self.state = if raw_input {
                 KeyState::JustPressed
             } else {
                 KeyState::JustReleased
             };
+        } else {
+            // State is stable, transition JustPressed/JustReleased to Pressed/Released
+            if self.state == KeyState::JustPressed {
+                self.state = KeyState::Pressed;
+            } else if self.state == KeyState::JustReleased {
+                self.state = KeyState::Released;
+            }
         }
     }
 
-    pub fn state(&self) -> KeyState {
-        self.state
-    }
-
     pub fn is_pressed(&self) -> bool {
-        matches!(self.state, KeyState::Pressed)
+        matches!(self.state, KeyState::Pressed | KeyState::JustPressed)
     }
 
     pub fn just_pressed(&self) -> bool {
@@ -73,6 +68,6 @@ impl Debouncer {
     }
 
     pub fn is_released(&self) -> bool {
-        matches!(self.state, KeyState::Released)
+        matches!(self.state, KeyState::Released | KeyState::JustReleased)
     }
 }
