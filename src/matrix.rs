@@ -88,7 +88,11 @@ impl Matrix {
                                 idx += 1;
                             }
                         }
-                        Action::Modifier(modifier_code) => {
+                        Action::Modifier(modifier_code)
+                        | Action::ModTap {
+                            modifier: modifier_code,
+                            ..
+                        } => {
                             modifier |= modifier_code;
                         }
                         // LayerTap や LayerMomentary はイベント処理で完結
