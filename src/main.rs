@@ -20,23 +20,8 @@ mod matrix;
 mod usb;
 
 use embassy_executor::Spawner;
-use embassy_time::{Duration, Timer};
 use matrix::Matrix;
-use usb::{init_usb, usb_hid_task, usb_task, REPORT_CHANNEL};
-
-#[embassy_executor::task]
-async fn matrix_task(mut matrix: Matrix) -> ! {
-    loop {
-        matrix.scan_matrix();
-        let report = matrix.build_report();
-
-        // チャンネルにレポートを送信（空きがあるまで待機）
-        REPORT_CHANNEL.send(report).await;
-
-        // 1ms待機（1000Hzスキャン）
-        Timer::after(Duration::from_millis(1)).await;
-    }
-}
+use usb::{init_usb, usb_hid_task, usb_task};
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
@@ -50,7 +35,7 @@ async fn main(spawner: Spawner) {
     // タスクの起動
     defmt::unwrap!(spawner.spawn(usb_task(usb_dev)));
     defmt::unwrap!(spawner.spawn(usb_hid_task(usb_hid)));
-    defmt::unwrap!(spawner.spawn(matrix_task(matrix)));
+    defmt::unwrap!(spawner.spawn(Matrix::run(matrix)));
 
     defmt::info!("All tasks spawned.");
 }
