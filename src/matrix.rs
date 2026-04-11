@@ -5,7 +5,7 @@ use crate::keycodes::Action;
 use crate::keymaps::default::DEFAULT;
 use crate::layers::*;
 
-use embedded_hal::digital::{InputPin, OutputPin};
+use embassy_time::Instant;
 use usbd_hid::descriptor::KeyboardReport;
 
 pub struct Matrix {
@@ -22,22 +22,27 @@ impl Matrix {
             layer: Layer::new(),
         }
     }
+    
     pub fn scan_matrix(&mut self) {
-        let current_time = self.board.timer.get_counter();
+        let current_time = Instant::now();
 
+        // 掃査の前に全行をHigh（非アクティブ）にする
         for row_pin in self.board.rows.iter_mut() {
-            row_pin.set_high().ok();
+            row_pin.set_high();
         }
 
         for (r_idx, row_pin) in self.board.rows.iter_mut().enumerate() {
-            row_pin.set_low().ok();
+            // 対象の行をLow（アクティブ）にする
+            row_pin.set_low();
 
             for (c_idx, col_pin) in self.board.cols.iter_mut().enumerate() {
-                let pressed = col_pin.is_low().unwrap_or(false);
+                // 列がLowなら押されている（Col2Row, Pull-up）
+                let pressed = col_pin.is_low();
                 self.keys_debouncer[r_idx][c_idx].update(pressed, current_time);
             }
 
-            row_pin.set_high().ok();
+            // 行をHighに戻す
+            row_pin.set_high();
         }
     }
 
@@ -52,7 +57,6 @@ impl Matrix {
                 let action = self.get_action(r, c);
 
                 // --- イベント処理 (押した瞬間 / 離した瞬間) ---
-                #[allow(clippy::collapsible_if)]
                 if debouncer.just_pressed() {
                     if let Action::LayerTap {
                         layer_idx: layer,
@@ -64,7 +68,6 @@ impl Matrix {
                     }
                 }
 
-                #[allow(clippy::collapsible_if)]
                 if debouncer.just_released() {
                     if let Action::LayerTap {
                         layer_idx: _,
@@ -88,8 +91,7 @@ impl Matrix {
                         Action::Modifier(modifier_code) => {
                             modifier |= modifier_code;
                         }
-                        // LayerTap や LayerMomentary はイベント処理で完結しているので、
-                        // ここでは何もしない。
+                        // LayerTap や LayerMomentary はイベント処理で完結
                         _ => {}
                     }
                 }
