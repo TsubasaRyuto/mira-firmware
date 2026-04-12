@@ -1,10 +1,7 @@
 #![no_std]
 #![no_main]
 
-#[unsafe(link_section = ".boot2")]
-#[unsafe(no_mangle)]
-#[used]
-pub static BOOT2: [u8; 256] = rp2040_boot2::BOOT_LOADER_W25Q080;
+use defmt_rtt as _;
 
 mod board;
 mod config;
@@ -16,24 +13,33 @@ mod macros;
 mod matrix;
 mod usb;
 
-use cortex_m_rt::entry;
-use panic_halt as _;
+use embassy_executor::Spawner;
+use matrix::{Matrix, matrix_task};
+use usb::{init_usb, usb_hid_task, usb_task};
 
-use matrix::Matrix;
-use usb::KeyboardUsb;
+#[panic_handler]
+fn panic(_info: &core::panic::PanicInfo) -> ! {
+    loop {}
+}
 
-#[entry]
-fn main() -> ! {
-    let (board, usb_bus_allocator) = board::init();
-    let mut usb = KeyboardUsb::init(&usb_bus_allocator);
-    let mut matrix = Matrix::new(board);
+#[unsafe(export_name = "_defmt_panic")]
+fn defmt_panic() -> ! {
+    loop {}
+}
 
-    loop {
-        let _ = usb.usb_dev.poll(&mut [&mut usb.hid]);
+#[embassy_executor::main]
+async fn main(spawner: Spawner) {
+    defmt::info!("Mira Firmware starting...");
 
-        matrix.scan_matrix();
-        let report = matrix.build_report();
+    let (board, usb_driver) = board::init();
+    let (usb_dev, usb_hid) = init_usb(usb_driver);
 
-        let _ = usb.hid.push_input(&report);
-    }
+    let matrix = Matrix::new(board);
+
+    // タスクの起動
+    spawner.spawn(usb_task(usb_dev).unwrap());
+    spawner.spawn(usb_hid_task(usb_hid).unwrap());
+    spawner.spawn(matrix_task(matrix).unwrap());
+
+    defmt::info!("All tasks spawned.");
 }

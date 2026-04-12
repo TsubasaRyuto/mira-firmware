@@ -20,13 +20,13 @@ const LAYER0: [[Action; MATRIX_COLS]; MATRIX_ROWS] = [
         Key(kc::SCOLON),
     ],
     [
-        NoOp,
-        NoOp,
+        Modifier(modifiers::LSHIFT),
+        Modifier(modifiers::LCTRL),
         NoOp,
         LayerMomentary(layers::LAYER1),
         LayerMomentary(layers::LAYER2),
         LayerMomentary(layers::LAYER3),
-        NoOp, // Was LayerMomentary(layers::LAYER4), which causes a panic.
+        NoOp,
         NoOp,
         NoOp,
         NoOp,

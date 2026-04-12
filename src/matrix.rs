@@ -4,14 +4,16 @@ use crate::debounce::Debouncer;
 use crate::keycodes::Action;
 use crate::keymaps::default::DEFAULT;
 use crate::layers::*;
+use crate::usb::REPORT_CHANNEL;
 
-use embedded_hal::digital::{InputPin, OutputPin};
+use embassy_time::{Duration, Instant, Timer};
 use usbd_hid::descriptor::KeyboardReport;
 
 pub struct Matrix {
     keys_debouncer: [[Debouncer; MATRIX_COLS]; MATRIX_ROWS],
     board: Board,
     layer: Layer,
+    last_report: KeyboardReport,
 }
 
 impl Matrix {
@@ -20,24 +22,32 @@ impl Matrix {
             board,
             keys_debouncer: [[Debouncer::new(); MATRIX_COLS]; MATRIX_ROWS],
             layer: Layer::new(),
+            last_report: KeyboardReport {
+                modifier: 0,
+                reserved: 0,
+                leds: 0,
+                keycodes: [0; 6],
+            },
         }
     }
-    pub fn scan_matrix(&mut self) {
-        let current_time = self.board.timer.get_counter();
+
+    async fn scan(&mut self) {
+        let current_time = Instant::now();
 
         for row_pin in self.board.rows.iter_mut() {
-            row_pin.set_high().ok();
+            row_pin.set_high();
         }
 
         for (r_idx, row_pin) in self.board.rows.iter_mut().enumerate() {
-            row_pin.set_low().ok();
+            row_pin.set_low();
+            Timer::after_micros(1).await;
 
             for (c_idx, col_pin) in self.board.cols.iter_mut().enumerate() {
-                let pressed = col_pin.is_low().unwrap_or(false);
+                let pressed = col_pin.is_low();
                 self.keys_debouncer[r_idx][c_idx].update(pressed, current_time);
             }
 
-            row_pin.set_high().ok();
+            row_pin.set_high();
         }
     }
 
@@ -51,32 +61,25 @@ impl Matrix {
                 let debouncer = &self.keys_debouncer[r][c];
                 let action = self.get_action(r, c);
 
-                // --- イベント処理 (押した瞬間 / 離した瞬間) ---
-                #[allow(clippy::collapsible_if)]
                 if debouncer.just_pressed() {
-                    if let Action::LayerTap {
-                        layer_idx: layer,
-                        key_code: _,
-                    }
-                    | Action::LayerMomentary(layer) = action
-                    {
-                        self.layer.update(layer);
+                    match action {
+                        Action::LayerTap { layer_idx: layer, .. }
+                        | Action::LayerMomentary(layer) => {
+                            self.layer.update(layer);
+                        }
+                        _ => {}
                     }
                 }
 
-                #[allow(clippy::collapsible_if)]
                 if debouncer.just_released() {
-                    if let Action::LayerTap {
-                        layer_idx: _,
-                        key_code: _,
-                    }
-                    | Action::LayerMomentary(_) = action
-                    {
-                        self.layer.update(LAYER0);
+                    match action {
+                        Action::LayerTap { .. } | Action::LayerMomentary(_) => {
+                            self.layer.update(LAYER0);
+                        }
+                        _ => {}
                     }
                 }
 
-                // --- 状態処理 (押している間) ---
                 if debouncer.is_pressed() {
                     match action {
                         Action::Key(key_code) => {
@@ -85,11 +88,10 @@ impl Matrix {
                                 idx += 1;
                             }
                         }
-                        Action::Modifier(modifier_code) => {
+                        Action::Modifier(modifier_code)
+                        | Action::ModTap { modifier: modifier_code, .. } => {
                             modifier |= modifier_code;
                         }
-                        // LayerTap や LayerMomentary はイベント処理で完結しているので、
-                        // ここでは何もしない。
                         _ => {}
                     }
                 }
@@ -112,5 +114,24 @@ impl Matrix {
             }
         }
         Action::NoOp
+    }
+}
+
+/// マトリックススキャンタスクのエントリポイント (impl の外に配置)
+#[embassy_executor::task]
+pub async fn matrix_task(mut matrix: Matrix) -> ! {
+    loop {
+        matrix.scan().await;
+        let report = matrix.build_report();
+
+        if report.modifier != matrix.last_report.modifier
+            || report.keycodes != matrix.last_report.keycodes
+        {
+            if REPORT_CHANNEL.try_send(report).is_ok() {
+                matrix.last_report = report;
+            }
+        }
+
+        Timer::after(Duration::from_millis(1)).await;
     }
 }
