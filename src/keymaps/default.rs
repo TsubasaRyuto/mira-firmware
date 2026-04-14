@@ -1,6 +1,6 @@
 use crate::config::{LAYER_SIZE, MATRIX_COLS, MATRIX_ROWS};
-use crate::keycodes::Action::*;
 use crate::keycodes::{Action, kc, modifiers};
+use crate::keycodes::{Action::*, Modifier};
 use crate::layers;
 
 pub const DEFAULT: [[[Action; MATRIX_COLS]; MATRIX_ROWS]; LAYER_SIZE] =
@@ -20,13 +20,13 @@ const LAYER0: [[Action; MATRIX_COLS]; MATRIX_ROWS] = [
         Key(kc::SCOLON),
     ],
     [
-        Modifier(modifiers::LSHIFT),
-        Modifier(modifiers::LCTRL),
+        NoOp,
+        NoOp,
         NoOp,
         LayerMomentary(layers::LAYER1),
         LayerMomentary(layers::LAYER2),
         LayerMomentary(layers::LAYER3),
-        NoOp,
+        Modifier(modifiers::LSHIFT),
         NoOp,
         NoOp,
         NoOp,
@@ -35,7 +35,7 @@ const LAYER0: [[Action; MATRIX_COLS]; MATRIX_ROWS] = [
 
 const LAYER1: [[Action; MATRIX_COLS]; MATRIX_ROWS] = [
     [
-        Key(kc::Q),
+        Trans,
         Key(kc::W),
         Key(kc::E),
         Key(kc::R),
@@ -47,17 +47,23 @@ const LAYER1: [[Action; MATRIX_COLS]; MATRIX_ROWS] = [
         Key(kc::P),
     ],
     [
-        NoOp, NoOp, NoOp, Trans, Trans, // Was Key(kc::SPACE), bug.
-        Trans, // Was Key(kc::BACKSP), bug.
-        Trans, // Was Key(kc::ENTER), bug.
-        NoOp, NoOp, NoOp,
+        NoOp,
+        NoOp,
+        NoOp,
+        Key(kc::SPACE),
+        Key(kc::BACKSP),
+        Key(kc::ENTER),
+        Trans,
+        NoOp,
+        NoOp,
+        NoOp,
     ],
 ];
 
 const LAYER2: [[Action; MATRIX_COLS]; MATRIX_ROWS] = [
     [
         Key(kc::Z),
-        Key(kc::X),
+        Trans,
         Key(kc::C),
         Key(kc::V),
         Key(kc::B),

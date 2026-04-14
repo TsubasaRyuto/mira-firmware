@@ -19,15 +19,15 @@ pub enum Action {
     /// Dual-role key (Layer-Tap)
     /// Activates the specified layer when held. and send a key code when tapped.
     /// Example: `LayerTap { layer_ids: layers::LAYER1, key_code: kc::A }`
-    LayerTap { layer_idx: usize, key_code: KeyCode },
+    LayerTap { layer_idx: u32, key_code: KeyCode },
 
     /// Activates the specified layer while held.
     /// Example: `LayerMomentary(layers::LAYER1)`
-    LayerMomentary(usize),
+    LayerMomentary(u32),
 
     /// Toggles the specified layer on/off with each press.
     /// Example: `LayerMomentary(layers::LAYER1)`
-    LayerToggle(usize),
+    LayerToggle(u32),
 
     /// Transparent.
     /// Passes the event down to the lower active layer.
