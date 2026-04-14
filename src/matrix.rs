@@ -11,6 +11,8 @@ use usbd_hid::descriptor::KeyboardReport;
 
 pub struct Matrix {
     keys_debouncer: [[Debouncer; MATRIX_COLS]; MATRIX_ROWS],
+    /// 各キーが押された時に決定されたアクションを保持する
+    keys_action: [[Action; MATRIX_COLS]; MATRIX_ROWS],
     board: Board,
     layer: Layer,
     last_report: KeyboardReport,
@@ -21,6 +23,7 @@ impl Matrix {
         Self {
             board,
             keys_debouncer: [[Debouncer::new(); MATRIX_COLS]; MATRIX_ROWS],
+            keys_action: [[Action::NoOp; MATRIX_COLS]; MATRIX_ROWS],
             layer: Layer::new(),
             last_report: KeyboardReport {
                 modifier: 0,
@@ -59,25 +62,41 @@ impl Matrix {
         for r in 0..MATRIX_ROWS {
             for c in 0..MATRIX_COLS {
                 let debouncer = &self.keys_debouncer[r][c];
-                let action = self.get_action(r, c);
 
+                // 押された瞬間にアクションを確定させ、保持する
                 if debouncer.just_pressed() {
+                    let action = self.get_action(r, c);
+                    self.keys_action[r][c] = action;
+
                     match action {
                         Action::LayerTap { layer_idx: layer, .. }
                         | Action::LayerMomentary(layer) => {
-                            self.layer.update(layer);
+                            self.layer.press(layer);
+                        }
+                        Action::LayerToggle(layer) => {
+                            if (self.layer.state >> layer) & 1 == 1 {
+                                self.layer.release(layer);
+                            } else {
+                                self.layer.press(layer);
+                            }
                         }
                         _ => {}
                     }
                 }
 
+                // 保持されているアクションを取得（押下中・離した時もこれを使用する）
+                let action = self.keys_action[r][c];
+
                 if debouncer.just_released() {
                     match action {
-                        Action::LayerTap { .. } | Action::LayerMomentary(_) => {
-                            self.layer.update(LAYER0);
+                        Action::LayerTap { layer_idx: layer, .. }
+                        | Action::LayerMomentary(layer) => {
+                            self.layer.release(layer);
                         }
                         _ => {}
                     }
+                    // 離した後はアクションをクリア
+                    self.keys_action[r][c] = Action::NoOp;
                 }
 
                 if debouncer.is_pressed() {
@@ -91,6 +110,13 @@ impl Matrix {
                         Action::Modifier(modifier_code)
                         | Action::ModTap { modifier: modifier_code, .. } => {
                             modifier |= modifier_code;
+                        }
+                        Action::LayerTap { key_code, .. } => {
+                            // LayerTapのTap動作（簡易実装：同時押し時はキーコード優先）
+                            if idx < keycodes.len() {
+                                keycodes[idx] = key_code;
+                                idx += 1;
+                            }
                         }
                         _ => {}
                     }
@@ -107,10 +133,13 @@ impl Matrix {
     }
 
     fn get_action(&self, row: usize, col: usize) -> Action {
+        // 有効なレイヤーのみを、インデックスの高い順に走査
         for layer in (0..=self.layer.active_layer).rev() {
-            let action = DEFAULT[layer][row][col];
-            if !matches!(action, Action::Trans) {
-                return action;
+            if (self.layer.state >> layer) & 1 == 1 {
+                let action = DEFAULT[layer as usize][row][col];
+                if !matches!(action, Action::Trans) {
+                    return action;
+                }
             }
         }
         Action::NoOp
