@@ -13,6 +13,8 @@ pub struct Matrix {
     keys_debouncer: [[Debouncer; MATRIX_COLS]; MATRIX_ROWS],
     /// 各キーが押された時に決定されたアクションを保持する
     keys_action: [[Action; MATRIX_COLS]; MATRIX_ROWS],
+    /// 各キーが押された時刻
+    keys_pressed_at: [[Option<Instant>; MATRIX_COLS]; MATRIX_ROWS],
     board: Board,
     layer: Layer,
     last_report: KeyboardReport,
@@ -24,6 +26,7 @@ impl Matrix {
             board,
             keys_debouncer: [[Debouncer::new(); MATRIX_COLS]; MATRIX_ROWS],
             keys_action: [[Action::NoOp; MATRIX_COLS]; MATRIX_ROWS],
+            keys_pressed_at: [[None; MATRIX_COLS]; MATRIX_ROWS],
             layer: Layer::new(),
             last_report: KeyboardReport {
                 modifier: 0,
@@ -58,6 +61,7 @@ impl Matrix {
         let mut keycodes = [0u8; 6];
         let mut modifier = 0x00;
         let mut idx = 0;
+        let now = Instant::now();
 
         for r in 0..MATRIX_ROWS {
             for c in 0..MATRIX_COLS {
@@ -67,10 +71,10 @@ impl Matrix {
                 if debouncer.just_pressed() {
                     let action = self.get_action(r, c);
                     self.keys_action[r][c] = action;
+                    self.keys_pressed_at[r][c] = Some(now);
 
                     match action {
-                        Action::LayerTap { layer_idx: layer, .. }
-                        | Action::LayerMomentary(layer) => {
+                        Action::LayerMomentary(layer) => {
                             self.layer.press(layer);
                         }
                         Action::LayerToggle(layer) => {
@@ -84,41 +88,71 @@ impl Matrix {
                     }
                 }
 
-                // 保持されているアクションを取得（押下中・離した時もこれを使用する）
+                // 保持されているアクションを取得
                 let action = self.keys_action[r][c];
+                let pressed_at = self.keys_pressed_at[r][c];
 
                 if debouncer.just_released() {
+                    if let Some(t) = pressed_at {
+                        if now.duration_since(t).as_millis() < 200 {
+                            match action {
+                                Action::LayerTap { key_code, .. }
+                                | Action::ModTap { key_code, .. } => {
+                                    if idx < keycodes.len() {
+                                        keycodes[idx] = key_code;
+                                        idx += 1;
+                                    }
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+
                     match action {
-                        Action::LayerTap { layer_idx: layer, .. }
+                        Action::LayerTap {
+                            layer_idx: layer, ..
+                        }
                         | Action::LayerMomentary(layer) => {
                             self.layer.release(layer);
                         }
                         _ => {}
                     }
-                    // 離した後はアクションをクリア
+
                     self.keys_action[r][c] = Action::NoOp;
+                    self.keys_pressed_at[r][c] = None;
                 }
 
                 if debouncer.is_pressed() {
-                    match action {
-                        Action::Key(key_code) => {
-                            if idx < keycodes.len() {
-                                keycodes[idx] = key_code;
-                                idx += 1;
+                    if let Some(t) = pressed_at {
+                        match action {
+                            Action::Key(key_code) => {
+                                if idx < keycodes.len() {
+                                    keycodes[idx] = key_code;
+                                    idx += 1;
+                                }
                             }
-                        }
-                        Action::Modifier(modifier_code)
-                        | Action::ModTap { modifier: modifier_code, .. } => {
-                            modifier |= modifier_code;
-                        }
-                        Action::LayerTap { key_code, .. } => {
-                            // LayerTapのTap動作（簡易実装：同時押し時はキーコード優先）
-                            if idx < keycodes.len() {
-                                keycodes[idx] = key_code;
-                                idx += 1;
+                            Action::Modifier(modifier_code) => {
+                                modifier |= modifier_code;
                             }
+                            Action::ModTap {
+                                modifier: modifier_code,
+                                ..
+                            } => {
+                                if now.duration_since(t).as_millis() >= 200 {
+                                    modifier |= modifier_code;
+                                }
+                            }
+                            Action::LayerTap {
+                                layer_idx: layer, ..
+                            } => {
+                                if now.duration_since(t).as_millis() >= 200 {
+                                    if (self.layer.state >> layer) & 1 == 0 {
+                                        self.layer.press(layer);
+                                    }
+                                }
+                            }
+                            _ => {}
                         }
-                        _ => {}
                     }
                 }
             }
