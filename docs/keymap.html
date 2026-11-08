@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Mira Keymap – Typing Reference</title>
+<meta name="description" content="Mira 33-key split keyboard layout reference for typing practice.">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0f1117;--key:#1c2030;--edge:#2b3147;--txt:#e8ecf6;--sub:#8a93ad;
+        --sym:#f59e0b;--num:#38bdf8;--fn:#a78bfa;--mod:#34d399;--base:#e8ecf6}
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(circle at 20% 0%,#1b2140,var(--bg) 60%);color:var(--txt);
+       font-family:Inter,sans-serif;padding:32px;min-height:100vh}
+  h1{font-size:22px;margin:0 0 4px} p.lead{color:var(--sub);margin:0 0 24px;font-size:13px}
+  .tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+  .tabs button{background:var(--key);color:var(--txt);border:1px solid var(--edge);border-radius:8px;
+       padding:8px 14px;font:600 13px Inter;cursor:pointer;transition:.15s}
+  .tabs button.on,.tabs button:hover{border-color:var(--c);color:var(--c);box-shadow:0 0 12px -2px var(--c)}
+  section{margin-bottom:36px}
+  h2{font-size:15px;margin:0 0 12px;color:var(--c)}
+  .board{display:flex;gap:56px;justify-content:center}
+  .half{display:grid;grid-template-columns:repeat(5,60px);grid-template-rows:repeat(4,60px);gap:6px}
+  .k{background:linear-gradient(180deg,#232840,var(--key));border:1px solid var(--edge);border-radius:10px;
+     display:flex;flex-direction:column;align-items:center;justify-content:center;
+     font:600 17px "JetBrains Mono",monospace;position:relative;transition:.12s;box-shadow:0 3px 0 #0a0c12}
+  .k:hover{transform:translateY(-2px);border-color:var(--c)}
+  .k small{font:500 9px Inter;color:var(--sub);margin-top:2px;text-align:center;line-height:1.1}
+  .k.hl{color:var(--c);border-color:color-mix(in srgb,var(--c) 50%,var(--edge))}
+  .k.mod{color:var(--mod)} .k.ly{color:var(--hl,var(--sub))} .k.tr{opacity:.35}
+  .empty{visibility:hidden}
+  .all section{display:block} .single section{display:none} .single section.show{display:block}
+</style>
+</head>
+<body class="all">
+<header><h1>Mira Keymap</h1><p class="lead">33-key split · US配列 · タイプ練習用リファレンス</p></header>
+<nav class="tabs" id="tabs"></nav>
+<main id="layers"></main>
+<script>
+// [label, sub, cls]  null = 物理キーなし
+const N=null, T=["","","tr"];
+const L = {
+ BASE:{c:"var(--base)",rows:[
+  [N,["W"],["E"],["R"],["T"], ["Y"],["U"],["I"],["O"],N],
+  [["A"],["S"],["D"],["F"],["G"], ["H"],["J"],["K"],["L"],["P"]],
+  [["⇧","Shift","mod"],["X","長押しCtrl"],["C"],["V"],["B"], ["N"],["M"],["Z"],["Q","長押しAlt"],["⇧","Shift","mod"]],
+  [N,N,["SYM","hold","ly s"],["⌘","Cmd","mod"],["␣","Space/長押しNUM","ly n"], ["⌫","Bksp"],["⏎","Enter"],N,N,N]]},
+ SYM:{c:"var(--sym)",rows:[
+  [N,["!"],["@"],["#"],["$"], ["%"],["^"],["&"],["*"],N],
+  [["`"],["~"],["("],[")"],["-"], ["_"],["["],["]"],[";",":"],["'",'"']],
+  [["⇧","Shift","mod"],["\\","|"],["{"],["}"],["="], ["+"],[",","<"],[".",">"],["/","?"],["⇧","Shift","mod"]],
+  [N,N,["SYM","押下中","ly"],T,["FN","hold","ly f"], T,T,N,N,N]]},
+ NUM:{c:"var(--num)",rows:[
+  [N,["Esc"],["Tab"],[","],["."], ["←"],["↓"],["↑"],["→"],N],
+  [["1"],["2"],["3"],["4"],["5"], ["6"],["7"],["8"],["9"],["0"]],
+  [["⇧","","mod"],["<"],[">"],["Del","前方削除"],["-"], ["="],[","],["."],["/"],["⇧","","mod"]],
+  [N,N,["FN","hold","ly f"],["⌘","","mod"],["NUM","押下中","ly"], ["⌫","Bksp"],["⏎","Enter"],N,N,N]]},
+ FN:{c:"var(--fn)",rows:[
+  [N,["F1"],["F2"],["F3"],["F4"], ["F5"],["F6"],["F7"],["F8"],N],
+  [["F9"],["F10"],["F11"],["F12"],["","","tr"], T,T,T,T,T],
+  [T,T,T,T,T, T,T,T,T,T],
+  [N,N,["SYM","押下中","ly"],T,T, ["NUM","押下中","ly"],T,N,N,N]]},
+};
+const hlMap={s:"var(--sym)",n:"var(--num)",f:"var(--fn)"};
+const key=(d,base)=>{
+  const e=document.createElement("div");
+  if(!d){e.className="k empty";return e;}
+  const [t,s,c=""]=d; e.className="k "+c+(base||c?"":" hl");
+  const m=c.match(/ly (\w)/); if(m) e.style.setProperty("--hl",hlMap[m[1]]);
+  e.innerHTML=t+(s?`<small>${s}</small>`:""); return e;
+};
+const wrap=document.getElementById("layers"), tabs=document.getElementById("tabs");
+const show=n=>{document.body.className=n?"single":"all";
+  document.querySelectorAll("section").forEach(s=>s.classList.toggle("show",s.dataset.n===n));
+  tabs.querySelectorAll("button").forEach(b=>b.classList.toggle("on",(b.dataset.n||"")===(n||"")));};
+[["ALL",""],...Object.keys(L).map(k=>[k,k])].forEach(([lbl,n])=>{
+  const b=document.createElement("button"); b.textContent=lbl; b.dataset.n=n; b.id="tab-"+lbl.toLowerCase();
+  b.style.setProperty("--c",n?L[n].c:"var(--txt)"); b.onclick=()=>show(n); tabs.appendChild(b);});
+for(const [name,{c,rows}] of Object.entries(L)){
+  const sec=document.createElement("section"); sec.dataset.n=name; sec.style.setProperty("--c",c);
+  sec.innerHTML=`<h2>${name}</h2>`; const bd=document.createElement("div"); bd.className="board";
+  for(const side of [0,5]){const h=document.createElement("div"); h.className="half";
+    rows.forEach(r=>r.slice(side,side+5).forEach(d=>h.appendChild(key(d,name==="BASE")))); bd.appendChild(h);}
+  sec.appendChild(bd); wrap.appendChild(sec);}
+show("");
+</script>
+</body>
+</html>

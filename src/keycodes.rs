@@ -4,6 +4,17 @@ pub enum Action {
     /// Example: `Key(kc::A)`, `Key(kc::ENTER)`
     Key(KeyCode),
 
+    /// Sends a key code together with Left Shift.
+    /// Example: `Shifted(kc::_1)` sends `!`, `Shifted(kc::LBRACKET)` sends `{`
+    Shifted(KeyCode),
+
+    /// Sends a key code together with the given modifier(s).
+    /// Example: `ModKey { modifier: modifiers::LGUI, key_code: kc::C }` sends Cmd+C
+    ModKey {
+        modifier: Modifier,
+        key_code: KeyCode,
+    },
+
     /// Modifier only. Active while held.
     /// Example: `Modifier(modifiers::LCTRL)`
     Modifier(Modifier),
@@ -93,6 +104,7 @@ pub mod kc {
     pub const BACKSP: KeyCode = 0x2A;
     pub const TAB: KeyCode = 0x2B;
     pub const SPACE: KeyCode = 0x2C;
+    pub const DELETE: KeyCode = 0x4C; // 前方削除 (Mac: Fn+Delete)
 
     // 記号（US）
     pub const MINUS: KeyCode = 0x2D; // -

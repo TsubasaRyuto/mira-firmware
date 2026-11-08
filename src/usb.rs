@@ -8,7 +8,7 @@ use embassy_usb::Config;
 use embassy_usb::{Builder, Handler};
 use usbd_hid::descriptor::{KeyboardReport, SerializedDescriptor};
 
-use crate::config::{
+use crate::keyboards::active_keyboard::config::{
     USB_MANUFACTURER, USB_PRODUCT, USB_PRODUCT_ID, USB_VENDOR_ID,
 };
 

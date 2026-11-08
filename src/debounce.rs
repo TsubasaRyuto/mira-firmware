@@ -1,4 +1,4 @@
-use crate::config::DEBOUNCE;
+use crate::keyboards::active_keyboard::config::DEBOUNCE;
 use embassy_time::{Duration, Instant};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, defmt::Format)]
